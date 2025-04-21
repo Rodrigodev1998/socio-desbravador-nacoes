@@ -12,6 +12,7 @@ export default function Payment() {
     const { createMercadoPagoCheckout } = useMercadoPago();
 
     const [nome, setNome] = useState("");
+    const [telefone, setTelefone] = useState("");
     const [email, setEmail] = useState("");
     const [valor, setValor] = useState<number | null>(null);
     const [outroValor, setOutroValor] = useState<number | "">("");
@@ -23,12 +24,22 @@ export default function Payment() {
   
   
       setFormValido(nome.length > 2 && isEmailValido && valorFinal > 0);
-    }, [nome, email, valor, outroValor]);
+    }, [nome, telefone, email, valor, outroValor]);
+
+    function handleTelefoneChange(e: React.ChangeEvent<HTMLInputElement>) {
+      let input = e.target.value;
+      input = input.replace(/\D/g, '');
+      input = input.replace(/^(\d{2})(\d)/g, '($1) $2');
+      input = input.replace(/(\d{5})(\d)/, '$1-$2');
+      input = input.slice(0, 15);
+      setTelefone(input);
+    }
 
     async function saveUserData() {
       try {
         const docRef = await addDoc(collection(db, "contribuicoes"), {
           nome,
+          telefone,
           email,
           valor: valor === 0 ? Number(outroValor) : valor,
           timestamp: new Date(),
@@ -42,12 +53,12 @@ export default function Payment() {
     function handleSubmit() {
       const valorFinal = (valor === 0 ? Number(outroValor) : valor) ?? 0;
       saveUserData();
-  
-      // createMercadoPagoCheckout({
-      //   nome,
-      //   userEmail: email,
-      //   valor: valorFinal,
-      // });
+      createMercadoPagoCheckout({
+        nome,
+        telefone,
+        userEmail: email,
+        valor: valorFinal,
+      });
     }
   
     return (
@@ -55,7 +66,7 @@ export default function Payment() {
         <div className="bg-white shadow-md rounded-xl p-8 w-full max-w-md space-y-6">
           <div className="flex justify-center mb-4">
             <Image
-              src={logo} // Substitua com o caminho correto da sua logo
+              src={logo}
               alt="Logo"
               className="h-24 w-24" // Ajuste o tamanho da logo
             />
@@ -67,6 +78,14 @@ export default function Payment() {
             placeholder="Nome completo"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
+            className="w-full px-4 py-2 border rounded-md"
+          />
+
+          <input
+            type="text"
+            placeholder="Insira o seu whatsapp"
+            value={telefone}
+            onChange={handleTelefoneChange}
             className="w-full px-4 py-2 border rounded-md"
           />
   
@@ -104,7 +123,7 @@ export default function Payment() {
                 checked={valor === 0}
                 onChange={() => setValor(0)}
               />
-              Outro valor
+              Gostaria de doar outro valor
             </label>
   
             {valor === 0 && (
