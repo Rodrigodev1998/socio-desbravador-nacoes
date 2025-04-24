@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/sidebar";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
 import { db } from "@/src/firebase/firebase";
 import { RefreshCw } from "lucide-react";
 
@@ -15,7 +15,7 @@ export default function Dashboard() {
   const [totalArrecadado, setTotalArrecadado] = useState(0);
   const [quantidadeContribuicoes, setQuantidadeContribuicoes] = useState(0);
   const [contribuicoes, setContribuicoes] = useState<
-  { nome: string; telefone:string; email: string; valor: number }[]
+  { id: string; nome: string; telefone:string; email: string; valor: number }[]
   >([]);
   const router = useRouter();
 
@@ -29,6 +29,7 @@ export default function Dashboard() {
       const docsList = snapshot.docs.map((doc) => {
         const data = doc.data();
         return {
+          id: doc.id,
           nome: data.nome ?? "",
           telefone: data.telefone ?? "",
           email: data.email ?? "",
@@ -40,6 +41,16 @@ export default function Dashboard() {
       setQuantidadeContribuicoes(snapshot.size);
     } catch (error) {
       console.error("Erro ao buscar contribuições:", error);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await deleteDoc(doc(db, "contribuicoes", id));
+      setContribuicoes((prev) => prev.filter((item) => item.id !== id));
+      fetchTotal();
+    } catch (error) {
+      console.error("Erro ao excluir contribuição:", error);
     }
   }
   
@@ -103,6 +114,7 @@ export default function Dashboard() {
                     <th className="px-4 py-2 text-left border-b">Email</th>
                     <th className="px-4 py-2 text-left border-b">Whatsapp</th>
                     <th className="px-4 py-2 text-left border-b">Valor</th>
+                    <th className="px-4 py-2 text-left border-b">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -112,6 +124,14 @@ export default function Dashboard() {
                       <td className="px-4 py-2">{item.email}</td>
                       <td className="px-4 py-2">{item.telefone}</td>
                       <td className="px-4 py-2">R$ {item.valor.toFixed(2)}</td>
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="text-red-600 hover:underline"
+                        >
+                          Excluir
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
